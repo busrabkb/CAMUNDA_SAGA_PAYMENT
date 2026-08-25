@@ -1,120 +1,51 @@
 # Camunda Order Saga Demo
 
-Camunda 7 ile sipariş saga akışı (Create Order → Payment → Inventory, hata durumunda Refund → Cancel).
+> [English](README.en.md)
 
-## Gereksinimler
+## Çalıştırma
 
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Docker Compose dahil)
-
-## Docker ile çalıştırma
-
-Proje kök dizininde.
-
-### Tek komut (önerilen)
-
-Build + container başlatma birlikte:
+Docker Desktop açıkken proje klasöründe:
 
 ```bash
 docker compose up --build
 ```
 
-### İki ayrı komut
+Bu komut **hem build eder hem çalıştırır** (`build` + `up` birlikte). Terminal açık kalır; logları görürsün. Hazır olunca `http://localhost:8080` cevap verir.
 
-`build` sadece image oluşturur, uygulamayı **çalıştırmaz**. Build sonrası mutlaka `up` gerekir:
+Sadece build edip ayrı başlatmak istersen:
 
 ```bash
 docker compose build
 docker compose up
 ```
 
-Arka planda çalıştırmak için:
+Durdurmak için: `Ctrl+C`, sonra `docker compose down`
+
+## Örnek istek
 
 ```bash
-docker compose up -d
+curl -X POST http://localhost:8080/orders -H "Content-Type: application/json" -d "{\"customerId\":\"ahmet\",\"amount\":100}"
 ```
 
-İlk çalıştırmada Maven build + image oluşturma birkaç dakika sürebilir.
+## Camunda Cockpit
 
-Uygulama hazır olunca:
+Süreci görsel izlemek için tarayıcıda aç:
 
-- API: `http://localhost:8080`
-- Camunda Cockpit: `http://localhost:8080/camunda/app/cockpit/`
-  - Kullanıcı: `demo`
-  - Şifre: `demo`
+**http://localhost:8080/camunda/app/cockpit/**
 
-## Test istekleri
+- Kullanıcı: `demo`
+- Şifre: `demo`
 
-### Başarılı sipariş (amount ≤ 500)
+Cockpit → **Processes** → `orderSaga` → çalışan instance'ları ve adımları buradan görebilirsin.
 
-```bash
-curl -X POST http://localhost:8080/orders ^
-  -H "Content-Type: application/json" ^
-  -d "{\"customerId\":\"ahmet\",\"amount\":100}"
-```
+## Camunda nasıl çalışıyor?
 
-Beklenen: `orderStatus=COMPLETED`, `paymentStatus=SUCCESS`
+Bu projede **ayrı Camunda sunucusu yok**. Camunda, Spring Boot uygulamasının içinde gömülü çalışır.
 
-### Stok hatası + compensation (amount > 500)
+1. App açılınca `order-saga.bpmn` deploy edilir, Postgres'te `ACT_*` tabloları oluşur
+2. `POST /orders` → Camunda `orderSaga` sürecini başlatır
+3. BPMN akışı adım adım ilerler: Create Order → Payment → Inventory
+4. Her adımda Camunda ilgili **Java delegate**'i çağırır; delegate iş mantığını çalıştırır (`orders` / `payments` tablolarına yazar)
+5. Inventory başarısız olursa (amount > 500) → Refund → Cancel yolu çalışır
 
-```bash
-curl -X POST http://localhost:8080/orders ^
-  -H "Content-Type: application/json" ^
-  -d "{\"customerId\":\"ahmet\",\"amount\":750}"
-```
-
-Beklenen: `orderStatus=CANCELLED`, `paymentStatus=REFUNDED`, `inventoryStatus=FAILED`
-
-### Sipariş sorgulama
-
-```bash
-curl http://localhost:8080/orders/{orderId}
-```
-
-`{orderId}` yerine create cevabındaki `orderId` değerini kullanın.
-
-## Durdurma
-
-```bash
-docker compose down
-```
-
-Veritabanı volume'ünü de silmek için:
-
-```bash
-docker compose down -v
-```
-
-## Servisler
-
-| Servis   | Port | Açıklama                          |
-|----------|------|-----------------------------------|
-| app      | 8080 | Spring Boot + Camunda             |
-| postgres | 5432 | PostgreSQL (`camunda_demo` DB)    |
-
-İlk açılışta:
-
-- Flyway → `orders`, `payments` tablolarını oluşturur
-- Camunda → `ACT_*` tablolarını oluşturur
-- BPMN → `order-saga.bpmn` otomatik deploy edilir
-
-## Sorun giderme
-
-**Port 8080 veya 5432 dolu**
-
-`docker-compose.yml` içinde port mapping'i değiştirin veya çakışan servisi durdurun.
-
-**App postgres'e bağlanamıyor**
-
-Postgres healthcheck tamamlanana kadar app bekler. Logları kontrol edin:
-
-```bash
-docker compose logs -f app
-```
-
-**Maven dependency hatası (IDE)**
-
-```bash
-mvn clean compile
-```
-
-Camunda sürümü `pom.xml` içinde `camunda.version=7.23.0` olmalıdır.
+**BPMN** = akış (ne zaman, hangi sırayla) · **Delegate** = Java kodu (ne yapılacak) · **Cockpit** = izleme ekranı

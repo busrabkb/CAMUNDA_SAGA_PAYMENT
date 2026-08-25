@@ -11,6 +11,8 @@ public final class ProcessVariables {
     public static final String PAYMENT_STATUS = "paymentStatus";
     public static final String INVENTORY_STATUS = "inventoryStatus";
     public static final String ORDER_STATUS = "orderStatus";
+    public static final String COMPLETED_BY = "completedBy";
+    public static final String COMPLETED_AT = "completedAt";
 
     private ProcessVariables() {
     }

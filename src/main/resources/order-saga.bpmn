@@ -15,19 +15,19 @@
       <bpmn:outgoing>Flow_start_to_create</bpmn:outgoing>
     </bpmn:startEvent>
 
-    <!-- Service Task: JavaDelegate sinifi camunda:class ile baglanir -->
+    <!-- Service Task: ince JavaDelegate Spring bean uzerinden baglanir -->
     <bpmn:serviceTask id="Task_createOrder" name="Create Order"
-                      camunda:class="com.demo.ordersaga.CreateOrderDelegate">
+                      camunda:delegateExpression="${createOrderDelegate}">
       <bpmn:incoming>Flow_start_to_create</bpmn:incoming>
       <bpmn:outgoing>Flow_create_to_payment</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Task_payment" name="Payment"
-                      camunda:class="com.demo.ordersaga.PaymentDelegate">
+                      camunda:delegateExpression="${paymentDelegate}">
       <bpmn:incoming>Flow_create_to_payment</bpmn:incoming>
       <bpmn:outgoing>Flow_payment_to_inventory</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Task_inventory" name="Inventory"
-                      camunda:class="com.demo.ordersaga.InventoryDelegate">
+                      camunda:delegateExpression="${inventoryDelegate}">
       <bpmn:incoming>Flow_payment_to_inventory</bpmn:incoming>
       <bpmn:outgoing>Flow_inventory_to_completed</bpmn:outgoing>
     </bpmn:serviceTask>
@@ -42,12 +42,12 @@
 
     <!-- Compensation: onceki adimlari ters sirada geri alir -->
     <bpmn:serviceTask id="Task_refundPayment" name="Refund Payment"
-                      camunda:class="com.demo.ordersaga.RefundPaymentDelegate">
+                      camunda:delegateExpression="${refundPaymentDelegate}">
       <bpmn:incoming>Flow_failure_to_refund</bpmn:incoming>
       <bpmn:outgoing>Flow_refund_to_cancel</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:serviceTask id="Task_cancelOrder" name="Cancel Order"
-                      camunda:class="com.demo.ordersaga.CancelOrderDelegate">
+                      camunda:delegateExpression="${cancelOrderDelegate}">
       <bpmn:incoming>Flow_refund_to_cancel</bpmn:incoming>
       <bpmn:outgoing>Flow_cancel_to_end</bpmn:outgoing>
     </bpmn:serviceTask>

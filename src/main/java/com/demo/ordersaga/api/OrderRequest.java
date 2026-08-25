@@ -1,8 +1,14 @@
-package com.demo.ordersaga;
+package com.demo.ordersaga.api;
+
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 
 public class OrderRequest {
 
+    @NotBlank
     private String customerId;
+
+    @Min(1)
     private int amount;
 
     public String getCustomerId() {

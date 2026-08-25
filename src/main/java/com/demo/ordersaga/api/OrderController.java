@@ -1,6 +1,7 @@
 package com.demo.ordersaga.api;
 
 import com.demo.ordersaga.application.OrderSagaService;
+import com.demo.ordersaga.domain.CompletionService;
 import com.demo.ordersaga.domain.OrderService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -15,10 +16,16 @@ public class OrderController {
 
     private final OrderSagaService orderSagaService;
     private final OrderService orderService;
+    private final CompletionService completionService;
 
-    public OrderController(OrderSagaService orderSagaService, OrderService orderService) {
+    public OrderController(
+            OrderSagaService orderSagaService,
+            OrderService orderService,
+            CompletionService completionService
+    ) {
         this.orderSagaService = orderSagaService;
         this.orderService = orderService;
+        this.completionService = completionService;
     }
 
     @PostMapping("/orders")
@@ -28,6 +35,9 @@ public class OrderController {
 
     @GetMapping("/orders/{orderId}")
     public ResponseEntity<OrderDetailResponse> getOrder(@PathVariable String orderId) {
-        return ResponseEntity.ok(new OrderDetailResponse(orderService.getOrder(orderId)));
+        return ResponseEntity.ok(new OrderDetailResponse(
+                orderService.getOrder(orderId),
+                completionService.findByOrderId(orderId)
+        ));
     }
 }

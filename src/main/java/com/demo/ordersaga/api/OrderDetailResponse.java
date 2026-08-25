@@ -2,8 +2,10 @@ package com.demo.ordersaga.api;
 
 import com.demo.ordersaga.domain.model.OrderStatus;
 import com.demo.ordersaga.infrastructure.persistence.OrderRecord;
+import com.demo.ordersaga.infrastructure.persistence.ProcessCompletionRecord;
 
 import java.time.Instant;
+import java.util.Optional;
 
 public class OrderDetailResponse {
 
@@ -14,8 +16,10 @@ public class OrderDetailResponse {
     private final String processInstanceId;
     private final Instant createdAt;
     private final Instant updatedAt;
+    private final String completedBy;
+    private final Instant completedAt;
 
-    public OrderDetailResponse(OrderRecord order) {
+    public OrderDetailResponse(OrderRecord order, Optional<ProcessCompletionRecord> completion) {
         this.orderId = order.id();
         this.customerId = order.customerId();
         this.amount = order.amount();
@@ -23,6 +27,8 @@ public class OrderDetailResponse {
         this.processInstanceId = order.processInstanceId();
         this.createdAt = order.createdAt();
         this.updatedAt = order.updatedAt();
+        this.completedBy = completion.map(ProcessCompletionRecord::completedBy).orElse(null);
+        this.completedAt = completion.map(ProcessCompletionRecord::completedAt).orElse(null);
     }
 
     public String getOrderId() {
@@ -51,5 +57,13 @@ public class OrderDetailResponse {
 
     public Instant getUpdatedAt() {
         return updatedAt;
+    }
+
+    public String getCompletedBy() {
+        return completedBy;
+    }
+
+    public Instant getCompletedAt() {
+        return completedAt;
     }
 }

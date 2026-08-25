@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:di="http://www.omg.org/spec/DD/20100524/DI"
+                  xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+                  id="Definitions_orderSaga"
+                  targetNamespace="http://camunda.org/examples">
+  <!-- Error Definition: BpmnError errorCode ile eslesir -->
+  <bpmn:error id="Error_InventoryFailed" name="InventoryFailed" errorCode="InventoryFailed"/>
+
+  <!-- Process Definition: calistirilabilir BPMN tanimi (key = orderSaga) -->
+  <bpmn:process id="orderSaga" name="Order Saga" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" name="Start">
+      <bpmn:outgoing>Flow_start_to_create</bpmn:outgoing>
+    </bpmn:startEvent>
+
+    <!-- Service Task: JavaDelegate sinifi camunda:class ile baglanir -->
+    <bpmn:serviceTask id="Task_createOrder" name="Create Order"
+                      camunda:class="com.demo.ordersaga.CreateOrderDelegate">
+      <bpmn:incoming>Flow_start_to_create</bpmn:incoming>
+      <bpmn:outgoing>Flow_create_to_payment</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_payment" name="Payment"
+                      camunda:class="com.demo.ordersaga.PaymentDelegate">
+      <bpmn:incoming>Flow_create_to_payment</bpmn:incoming>
+      <bpmn:outgoing>Flow_payment_to_inventory</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_inventory" name="Inventory"
+                      camunda:class="com.demo.ordersaga.InventoryDelegate">
+      <bpmn:incoming>Flow_payment_to_inventory</bpmn:incoming>
+      <bpmn:outgoing>Flow_inventory_to_completed</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Error Boundary Event: InventoryFailed hatasini yakalar -->
+    <bpmn:boundaryEvent id="BoundaryEvent_failure" name="Failure"
+                        attachedToRef="Task_inventory">
+      <bpmn:outgoing>Flow_failure_to_refund</bpmn:outgoing>
+      <bpmn:errorEventDefinition id="ErrorEventDefinition_inventory"
+                                 errorRef="Error_InventoryFailed"/>
+    </bpmn:boundaryEvent>
+
+    <!-- Compensation: onceki adimlari ters sirada geri alir -->
+    <bpmn:serviceTask id="Task_refundPayment" name="Refund Payment"
+                      camunda:class="com.demo.ordersaga.RefundPaymentDelegate">
+      <bpmn:incoming>Flow_failure_to_refund</bpmn:incoming>
+      <bpmn:outgoing>Flow_refund_to_cancel</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_cancelOrder" name="Cancel Order"
+                      camunda:class="com.demo.ordersaga.CancelOrderDelegate">
+      <bpmn:incoming>Flow_refund_to_cancel</bpmn:incoming>
+      <bpmn:outgoing>Flow_cancel_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <bpmn:endEvent id="EndEvent_completed" name="Complete Order">
+      <bpmn:incoming>Flow_inventory_to_completed</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:endEvent id="EndEvent_cancelled" name="End">
+      <bpmn:incoming>Flow_cancel_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+
+    <bpmn:sequenceFlow id="Flow_start_to_create" sourceRef="StartEvent_1" targetRef="Task_createOrder"/>
+    <bpmn:sequenceFlow id="Flow_create_to_payment" sourceRef="Task_createOrder" targetRef="Task_payment"/>
+    <bpmn:sequenceFlow id="Flow_payment_to_inventory" sourceRef="Task_payment" targetRef="Task_inventory"/>
+    <bpmn:sequenceFlow id="Flow_inventory_to_completed" sourceRef="Task_inventory" targetRef="EndEvent_completed"/>
+    <bpmn:sequenceFlow id="Flow_failure_to_refund" sourceRef="BoundaryEvent_failure" targetRef="Task_refundPayment"/>
+    <bpmn:sequenceFlow id="Flow_refund_to_cancel" sourceRef="Task_refundPayment" targetRef="Task_cancelOrder"/>
+    <bpmn:sequenceFlow id="Flow_cancel_to_end" sourceRef="Task_cancelOrder" targetRef="EndEvent_cancelled"/>
+  </bpmn:process>
+
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="orderSaga">
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="180" y="102" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="186" y="145" width="24" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_createOrder_di" bpmnElement="Task_createOrder">
+        <dc:Bounds x="260" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_payment_di" bpmnElement="Task_payment">
+        <dc:Bounds x="430" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_inventory_di" bpmnElement="Task_inventory">
+        <dc:Bounds x="600" y="80" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_completed_di" bpmnElement="EndEvent_completed">
+        <dc:Bounds x="770" y="102" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="748" y="145" width="80" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BoundaryEvent_failure_di" bpmnElement="BoundaryEvent_failure">
+        <dc:Bounds x="632" y="142" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="674" y="178" width="36" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_refundPayment_di" bpmnElement="Task_refundPayment">
+        <dc:Bounds x="430" y="260" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_cancelOrder_di" bpmnElement="Task_cancelOrder">
+        <dc:Bounds x="260" y="260" width="100" height="80"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_cancelled_di" bpmnElement="EndEvent_cancelled">
+        <dc:Bounds x="180" y="282" width="36" height="36"/>
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="188" y="325" width="20" height="14"/>
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_create_di" bpmnElement="Flow_start_to_create">
+        <di:waypoint x="216" y="120"/>
+        <di:waypoint x="260" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_create_to_payment_di" bpmnElement="Flow_create_to_payment">
+        <di:waypoint x="360" y="120"/>
+        <di:waypoint x="430" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_payment_to_inventory_di" bpmnElement="Flow_payment_to_inventory">
+        <di:waypoint x="530" y="120"/>
+        <di:waypoint x="600" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_inventory_to_completed_di" bpmnElement="Flow_inventory_to_completed">
+        <di:waypoint x="700" y="120"/>
+        <di:waypoint x="770" y="120"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_failure_to_refund_di" bpmnElement="Flow_failure_to_refund">
+        <di:waypoint x="650" y="178"/>
+        <di:waypoint x="650" y="300"/>
+        <di:waypoint x="530" y="300"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_refund_to_cancel_di" bpmnElement="Flow_refund_to_cancel">
+        <di:waypoint x="430" y="300"/>
+        <di:waypoint x="360" y="300"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_cancel_to_end_di" bpmnElement="Flow_cancel_to_end">
+        <di:waypoint x="260" y="300"/>
+        <di:waypoint x="216" y="300"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

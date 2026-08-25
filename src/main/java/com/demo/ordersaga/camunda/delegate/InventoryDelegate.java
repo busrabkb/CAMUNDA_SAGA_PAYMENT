@@ -4,6 +4,7 @@ import com.demo.ordersaga.camunda.ExecutionVariableReader;
 import com.demo.ordersaga.camunda.constant.ProcessVariables;
 import com.demo.ordersaga.domain.InsufficientStockException;
 import com.demo.ordersaga.domain.InventoryService;
+import com.demo.ordersaga.domain.OrderService;
 import com.demo.ordersaga.domain.model.InventoryStatus;
 import com.demo.ordersaga.domain.model.OrderStatus;
 import org.camunda.bpm.engine.delegate.BpmnError;
@@ -15,9 +16,11 @@ import org.springframework.stereotype.Component;
 public class InventoryDelegate implements JavaDelegate {
 
     private final InventoryService inventoryService;
+    private final OrderService orderService;
 
-    public InventoryDelegate(InventoryService inventoryService) {
+    public InventoryDelegate(InventoryService inventoryService, OrderService orderService) {
         this.inventoryService = inventoryService;
+        this.orderService = orderService;
     }
 
     @Override
@@ -27,9 +30,11 @@ public class InventoryDelegate implements JavaDelegate {
 
         try {
             var result = inventoryService.reserve(orderId, amount);
+            orderService.completeOrder(orderId);
             execution.setVariable(ProcessVariables.INVENTORY_STATUS, result.inventoryStatus().name());
             execution.setVariable(ProcessVariables.ORDER_STATUS, result.orderStatus().name());
         } catch (InsufficientStockException ex) {
+            orderService.markInventoryFailed(orderId);
             execution.setVariable(ProcessVariables.INVENTORY_STATUS, InventoryStatus.FAILED.name());
             execution.setVariable(ProcessVariables.ORDER_STATUS, OrderStatus.INVENTORY_FAILED.name());
             throw new BpmnError(ProcessVariables.ERROR_INVENTORY_FAILED, ex.getMessage());

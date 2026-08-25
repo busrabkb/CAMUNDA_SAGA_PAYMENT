@@ -1,0 +1,22 @@
+CREATE TABLE orders (
+    id                  VARCHAR(64)  PRIMARY KEY,
+    customer_id         VARCHAR(255) NOT NULL,
+    amount              INT          NOT NULL,
+    status              VARCHAR(32)  NOT NULL,
+    process_instance_id VARCHAR(64)  NOT NULL,
+    created_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at          TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE payments (
+    id         BIGSERIAL    PRIMARY KEY,
+    order_id   VARCHAR(64)  NOT NULL REFERENCES orders (id),
+    amount     INT          NOT NULL,
+    status     VARCHAR(32)  NOT NULL,
+    created_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_orders_customer_id ON orders (customer_id);
+CREATE INDEX idx_orders_process_instance_id ON orders (process_instance_id);
+CREATE INDEX idx_payments_order_id ON payments (order_id);

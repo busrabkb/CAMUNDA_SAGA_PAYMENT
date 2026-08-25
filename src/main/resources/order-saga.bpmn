@@ -10,7 +10,8 @@
   <bpmn:error id="Error_InventoryFailed" name="InventoryFailed" errorCode="InventoryFailed"/>
 
   <!-- Process Definition: calistirilabilir BPMN tanimi (key = orderSaga) -->
-  <bpmn:process id="orderSaga" name="Order Saga" isExecutable="true">
+  <bpmn:process id="orderSaga" name="Order Saga" isExecutable="true"
+                camunda:historyTimeToLive="180">
     <bpmn:startEvent id="StartEvent_1" name="Start">
       <bpmn:outgoing>Flow_start_to_create</bpmn:outgoing>
     </bpmn:startEvent>

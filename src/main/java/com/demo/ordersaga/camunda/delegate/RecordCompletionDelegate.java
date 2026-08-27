@@ -1,6 +1,9 @@
 package com.demo.ordersaga.camunda.delegate;
 
+import com.demo.ordersaga.api.process.CompletionTaskResponse;
 import com.demo.ordersaga.camunda.ExecutionVariableReader;
+import com.demo.ordersaga.camunda.CamundaVariableStore;
+import com.demo.ordersaga.camunda.TaskResponseJsonMapper;
 import com.demo.ordersaga.camunda.constant.ProcessVariables;
 import com.demo.ordersaga.domain.CompletionService;
 import org.camunda.bpm.engine.delegate.DelegateExecution;
@@ -13,9 +16,17 @@ import java.time.Instant;
 public class RecordCompletionDelegate implements JavaDelegate {
 
     private final CompletionService completionService;
+    private final CamundaVariableStore variableStore;
+    private final TaskResponseJsonMapper responseJsonMapper;
 
-    public RecordCompletionDelegate(CompletionService completionService) {
+    public RecordCompletionDelegate(
+            CompletionService completionService,
+            CamundaVariableStore variableStore,
+            TaskResponseJsonMapper responseJsonMapper
+    ) {
         this.completionService = completionService;
+        this.variableStore = variableStore;
+        this.responseJsonMapper = responseJsonMapper;
     }
 
     @Override
@@ -28,5 +39,7 @@ public class RecordCompletionDelegate implements JavaDelegate {
         completionService.recordCompletion(orderId, processInstanceId, completedBy);
         execution.setVariable(ProcessVariables.COMPLETED_BY, completedBy);
         execution.setVariable(ProcessVariables.COMPLETED_AT, completedAt.toString());
+        variableStore.save(execution, ProcessVariables.COMPLETION_RESPONSE,
+                responseJsonMapper.toJson(new CompletionTaskResponse(completedBy, completedAt.toString())));
     }
 }

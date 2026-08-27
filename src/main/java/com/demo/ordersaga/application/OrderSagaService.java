@@ -2,6 +2,8 @@ package com.demo.ordersaga.application;
 
 import com.demo.ordersaga.api.OrderRequest;
 import com.demo.ordersaga.api.OrderResponse;
+import com.demo.ordersaga.camunda.CamundaVariableStore;
+import com.demo.ordersaga.camunda.TaskResponseJsonMapper;
 import com.demo.ordersaga.camunda.constant.ProcessVariables;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.runtime.ProcessInstanceWithVariables;
@@ -14,9 +16,17 @@ import java.util.Map;
 public class OrderSagaService {
 
     private final RuntimeService runtimeService;
+    private final CamundaVariableStore variableStore;
+    private final TaskResponseJsonMapper responseJsonMapper;
 
-    public OrderSagaService(RuntimeService runtimeService) {
+    public OrderSagaService(
+            RuntimeService runtimeService,
+            CamundaVariableStore variableStore,
+            TaskResponseJsonMapper responseJsonMapper
+    ) {
         this.runtimeService = runtimeService;
+        this.variableStore = variableStore;
+        this.responseJsonMapper = responseJsonMapper;
     }
 
     public OrderResponse startOrder(OrderRequest request) {
@@ -29,16 +39,7 @@ public class OrderSagaService {
                 .setVariables(variables)
                 .executeWithVariablesInReturn();
 
-        Map<String, Object> processVariables = instance.getVariables();
-        return new OrderResponse(
-                "started",
-                instance.getId(),
-                (String) processVariables.get(ProcessVariables.ORDER_ID),
-                (String) processVariables.get(ProcessVariables.PAYMENT_STATUS),
-                (String) processVariables.get(ProcessVariables.INVENTORY_STATUS),
-                (String) processVariables.get(ProcessVariables.ORDER_STATUS),
-                request.getCustomerId(),
-                request.getAmount()
-        );
+        String finalResponseJson = variableStore.getRequired(instance.getVariables(), ProcessVariables.FINAL_RESPONSE);
+        return responseJsonMapper.fromJson(finalResponseJson, OrderResponse.class);
     }
 }

@@ -49,3 +49,24 @@ Bu projede **ayrı Camunda sunucusu yok**. Camunda, Spring Boot uygulamasının 
 5. Inventory başarısız olursa (amount > 500) → Refund → Cancel yolu çalışır
 
 **BPMN** = akış (ne zaman, hangi sırayla) · **Delegate** = Java kodu (ne yapılacak) · **Cockpit** = izleme ekranı
+
+## Task response'ları nasıl birleşiyor?
+
+Her iş task'ı kendi küçük response DTO'sunu JSON process variable olarak yazar. Akışın sonundaki
+**Build Final Response** task'ı bunları birleştirir ve `POST /orders` endpoint'i bu ana DTO'yu döner.
+
+Başarılı bir isteğin sadeleştirilmiş cevabı:
+
+```json
+{
+  "processInstanceId": "...",
+  "createOrder": { "orderId": "order-...", "customerId": "ahmet", "amount": 100 },
+  "payment": { "status": "SUCCESS" },
+  "inventory": { "status": "SUCCESS", "orderStatus": "COMPLETED", "failureReason": null },
+  "completion": { "completedBy": "ahmet", "completedAt": "..." },
+  "refund": null,
+  "cancellation": null
+}
+```
+
+Stok yetersizse (`amount > 500`), `refund` ve `cancellation` dolar; `completion` ise `null` olur.

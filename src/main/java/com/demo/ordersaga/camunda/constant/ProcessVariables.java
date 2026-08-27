@@ -14,6 +14,14 @@ public final class ProcessVariables {
     public static final String COMPLETED_BY = "completedBy";
     public static final String COMPLETED_AT = "completedAt";
 
+    public static final String CREATE_ORDER_RESPONSE = "createOrderResponse";
+    public static final String PAYMENT_RESPONSE = "paymentResponse";
+    public static final String INVENTORY_RESPONSE = "inventoryResponse";
+    public static final String COMPLETION_RESPONSE = "completionResponse";
+    public static final String REFUND_RESPONSE = "refundResponse";
+    public static final String CANCEL_RESPONSE = "cancelResponse";
+    public static final String FINAL_RESPONSE = "finalResponse";
+
     private ProcessVariables() {
     }
 }

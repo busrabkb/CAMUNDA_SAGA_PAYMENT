@@ -47,13 +47,17 @@ class OrderSagaIntegrationTest {
                                 {"customerId":"ahmet","amount":100}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderStatus").value("COMPLETED"))
-                .andExpect(jsonPath("$.paymentStatus").value("SUCCESS"))
-                .andExpect(jsonPath("$.inventoryStatus").value("SUCCESS"))
+                .andExpect(jsonPath("$.createOrder.orderId").isNotEmpty())
+                .andExpect(jsonPath("$.payment.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.inventory.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.inventory.orderStatus").value("COMPLETED"))
+                .andExpect(jsonPath("$.completion.completedBy").value("ahmet"))
+                .andExpect(jsonPath("$.refund").isEmpty())
+                .andExpect(jsonPath("$.cancellation").isEmpty())
                 .andReturn();
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-        String orderId = body.get("orderId").asText();
+        String orderId = body.get("createOrder").get("orderId").asText();
 
         assertNotNull(orderId);
         assertEquals(OrderStatus.COMPLETED, orderRepository.findById(orderId).orElseThrow().status());
@@ -72,13 +76,16 @@ class OrderSagaIntegrationTest {
                                 {"customerId":"ahmet","amount":750}
                                 """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.orderStatus").value("CANCELLED"))
-                .andExpect(jsonPath("$.paymentStatus").value("REFUNDED"))
-                .andExpect(jsonPath("$.inventoryStatus").value("FAILED"))
+                .andExpect(jsonPath("$.payment.status").value("SUCCESS"))
+                .andExpect(jsonPath("$.inventory.status").value("FAILED"))
+                .andExpect(jsonPath("$.inventory.orderStatus").value("INVENTORY_FAILED"))
+                .andExpect(jsonPath("$.refund.status").value("REFUNDED"))
+                .andExpect(jsonPath("$.cancellation.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.completion").isEmpty())
                 .andReturn();
 
         JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
-        String orderId = body.get("orderId").asText();
+        String orderId = body.get("createOrder").get("orderId").asText();
 
         assertEquals(OrderStatus.CANCELLED, orderRepository.findById(orderId).orElseThrow().status());
         assertEquals(PaymentStatus.REFUNDED, paymentRepository.findLatestByOrderId(orderId).orElseThrow().status());

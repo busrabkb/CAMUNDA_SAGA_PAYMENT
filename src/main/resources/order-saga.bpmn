@@ -35,7 +35,7 @@
     <bpmn:serviceTask id="Task_recordCompletion" name="Record Completion"
                       camunda:delegateExpression="${recordCompletionDelegate}">
       <bpmn:incoming>Flow_inventory_to_record</bpmn:incoming>
-      <bpmn:outgoing>Flow_record_to_completed</bpmn:outgoing>
+      <bpmn:outgoing>Flow_record_to_response</bpmn:outgoing>
     </bpmn:serviceTask>
 
     <!-- Error Boundary Event: InventoryFailed hatasini yakalar -->
@@ -55,24 +55,30 @@
     <bpmn:serviceTask id="Task_cancelOrder" name="Cancel Order"
                       camunda:delegateExpression="${cancelOrderDelegate}">
       <bpmn:incoming>Flow_refund_to_cancel</bpmn:incoming>
-      <bpmn:outgoing>Flow_cancel_to_end</bpmn:outgoing>
+      <bpmn:outgoing>Flow_cancel_to_response</bpmn:outgoing>
+    </bpmn:serviceTask>
+
+    <!-- Task DTO'larini bir ana response DTO'sunda birlestirir. -->
+    <bpmn:serviceTask id="Task_buildResponse" name="Build Final Response"
+                      camunda:delegateExpression="${buildOrderResponseDelegate}">
+      <bpmn:incoming>Flow_record_to_response</bpmn:incoming>
+      <bpmn:incoming>Flow_cancel_to_response</bpmn:incoming>
+      <bpmn:outgoing>Flow_response_to_completed</bpmn:outgoing>
     </bpmn:serviceTask>
 
     <bpmn:endEvent id="EndEvent_completed" name="Complete Order">
-      <bpmn:incoming>Flow_record_to_completed</bpmn:incoming>
-    </bpmn:endEvent>
-    <bpmn:endEvent id="EndEvent_cancelled" name="End">
-      <bpmn:incoming>Flow_cancel_to_end</bpmn:incoming>
+      <bpmn:incoming>Flow_response_to_completed</bpmn:incoming>
     </bpmn:endEvent>
 
     <bpmn:sequenceFlow id="Flow_start_to_create" sourceRef="StartEvent_1" targetRef="Task_createOrder"/>
     <bpmn:sequenceFlow id="Flow_create_to_payment" sourceRef="Task_createOrder" targetRef="Task_payment"/>
     <bpmn:sequenceFlow id="Flow_payment_to_inventory" sourceRef="Task_payment" targetRef="Task_inventory"/>
     <bpmn:sequenceFlow id="Flow_inventory_to_record" sourceRef="Task_inventory" targetRef="Task_recordCompletion"/>
-    <bpmn:sequenceFlow id="Flow_record_to_completed" sourceRef="Task_recordCompletion" targetRef="EndEvent_completed"/>
+    <bpmn:sequenceFlow id="Flow_record_to_response" sourceRef="Task_recordCompletion" targetRef="Task_buildResponse"/>
     <bpmn:sequenceFlow id="Flow_failure_to_refund" sourceRef="BoundaryEvent_failure" targetRef="Task_refundPayment"/>
     <bpmn:sequenceFlow id="Flow_refund_to_cancel" sourceRef="Task_refundPayment" targetRef="Task_cancelOrder"/>
-    <bpmn:sequenceFlow id="Flow_cancel_to_end" sourceRef="Task_cancelOrder" targetRef="EndEvent_cancelled"/>
+    <bpmn:sequenceFlow id="Flow_cancel_to_response" sourceRef="Task_cancelOrder" targetRef="Task_buildResponse"/>
+    <bpmn:sequenceFlow id="Flow_response_to_completed" sourceRef="Task_buildResponse" targetRef="EndEvent_completed"/>
   </bpmn:process>
 
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
@@ -96,7 +102,7 @@
         <dc:Bounds x="740" y="80" width="100" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_completed_di" bpmnElement="EndEvent_completed">
-        <dc:Bounds x="890" y="102" width="36" height="36"/>
+        <dc:Bounds x="1060" y="102" width="36" height="36"/>
         <bpmndi:BPMNLabel>
           <dc:Bounds x="748" y="145" width="80" height="14"/>
         </bpmndi:BPMNLabel>
@@ -113,11 +119,8 @@
       <bpmndi:BPMNShape id="Task_cancelOrder_di" bpmnElement="Task_cancelOrder">
         <dc:Bounds x="260" y="260" width="100" height="80"/>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="EndEvent_cancelled_di" bpmnElement="EndEvent_cancelled">
-        <dc:Bounds x="180" y="282" width="36" height="36"/>
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="188" y="325" width="20" height="14"/>
-        </bpmndi:BPMNLabel>
+      <bpmndi:BPMNShape id="Task_buildResponse_di" bpmnElement="Task_buildResponse">
+        <dc:Bounds x="890" y="80" width="120" height="80"/>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_start_to_create_di" bpmnElement="Flow_start_to_create">
         <di:waypoint x="216" y="120"/>
@@ -135,7 +138,7 @@
         <di:waypoint x="700" y="120"/>
         <di:waypoint x="740" y="120"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_record_to_completed_di" bpmnElement="Flow_record_to_completed">
+      <bpmndi:BPMNEdge id="Flow_record_to_response_di" bpmnElement="Flow_record_to_response">
         <di:waypoint x="840" y="120"/>
         <di:waypoint x="890" y="120"/>
       </bpmndi:BPMNEdge>
@@ -148,9 +151,16 @@
         <di:waypoint x="430" y="300"/>
         <di:waypoint x="360" y="300"/>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_cancel_to_end_di" bpmnElement="Flow_cancel_to_end">
+      <bpmndi:BPMNEdge id="Flow_cancel_to_response_di" bpmnElement="Flow_cancel_to_response">
         <di:waypoint x="260" y="300"/>
         <di:waypoint x="216" y="300"/>
+        <di:waypoint x="216" y="400"/>
+        <di:waypoint x="950" y="400"/>
+        <di:waypoint x="950" y="160"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_response_to_completed_di" bpmnElement="Flow_response_to_completed">
+        <di:waypoint x="1010" y="120"/>
+        <di:waypoint x="1060" y="120"/>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

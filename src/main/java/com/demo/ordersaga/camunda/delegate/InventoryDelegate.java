@@ -1,6 +1,9 @@
 package com.demo.ordersaga.camunda.delegate;
 
+import com.demo.ordersaga.api.process.InventoryTaskResponse;
 import com.demo.ordersaga.camunda.ExecutionVariableReader;
+import com.demo.ordersaga.camunda.CamundaVariableStore;
+import com.demo.ordersaga.camunda.TaskResponseJsonMapper;
 import com.demo.ordersaga.camunda.constant.ProcessVariables;
 import com.demo.ordersaga.domain.InsufficientStockException;
 import com.demo.ordersaga.domain.InventoryService;
@@ -17,10 +20,19 @@ public class InventoryDelegate implements JavaDelegate {
 
     private final InventoryService inventoryService;
     private final OrderService orderService;
+    private final CamundaVariableStore variableStore;
+    private final TaskResponseJsonMapper responseJsonMapper;
 
-    public InventoryDelegate(InventoryService inventoryService, OrderService orderService) {
+    public InventoryDelegate(
+            InventoryService inventoryService,
+            OrderService orderService,
+            CamundaVariableStore variableStore,
+            TaskResponseJsonMapper responseJsonMapper
+    ) {
         this.inventoryService = inventoryService;
         this.orderService = orderService;
+        this.variableStore = variableStore;
+        this.responseJsonMapper = responseJsonMapper;
     }
 
     @Override
@@ -33,10 +45,16 @@ public class InventoryDelegate implements JavaDelegate {
             orderService.completeOrder(orderId);
             execution.setVariable(ProcessVariables.INVENTORY_STATUS, result.inventoryStatus().name());
             execution.setVariable(ProcessVariables.ORDER_STATUS, result.orderStatus().name());
+            variableStore.save(execution, ProcessVariables.INVENTORY_RESPONSE,
+                    responseJsonMapper.toJson(new InventoryTaskResponse(
+                            result.inventoryStatus().name(), result.orderStatus().name(), null)));
         } catch (InsufficientStockException ex) {
             orderService.markInventoryFailed(orderId);
             execution.setVariable(ProcessVariables.INVENTORY_STATUS, InventoryStatus.FAILED.name());
             execution.setVariable(ProcessVariables.ORDER_STATUS, OrderStatus.INVENTORY_FAILED.name());
+            variableStore.save(execution, ProcessVariables.INVENTORY_RESPONSE,
+                    responseJsonMapper.toJson(new InventoryTaskResponse(
+                            InventoryStatus.FAILED.name(), OrderStatus.INVENTORY_FAILED.name(), ex.getMessage())));
             throw new BpmnError(ProcessVariables.ERROR_INVENTORY_FAILED, ex.getMessage());
         }
     }

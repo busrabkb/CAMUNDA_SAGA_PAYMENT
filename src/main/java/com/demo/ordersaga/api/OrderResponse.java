@@ -1,65 +1,20 @@
 package com.demo.ordersaga.api;
 
-public class OrderResponse {
+import com.demo.ordersaga.api.process.CancelOrderTaskResponse;
+import com.demo.ordersaga.api.process.CompletionTaskResponse;
+import com.demo.ordersaga.api.process.CreateOrderTaskResponse;
+import com.demo.ordersaga.api.process.InventoryTaskResponse;
+import com.demo.ordersaga.api.process.PaymentTaskResponse;
+import com.demo.ordersaga.api.process.RefundPaymentTaskResponse;
 
-    private final String status;
-    private final String processInstanceId;
-    private final String orderId;
-    private final String paymentStatus;
-    private final String inventoryStatus;
-    private final String orderStatus;
-    private final String customerId;
-    private final int amount;
-
-    public OrderResponse(
-            String status,
-            String processInstanceId,
-            String orderId,
-            String paymentStatus,
-            String inventoryStatus,
-            String orderStatus,
-            String customerId,
-            int amount
-    ) {
-        this.status = status;
-        this.processInstanceId = processInstanceId;
-        this.orderId = orderId;
-        this.paymentStatus = paymentStatus;
-        this.inventoryStatus = inventoryStatus;
-        this.orderStatus = orderStatus;
-        this.customerId = customerId;
-        this.amount = amount;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public String getProcessInstanceId() {
-        return processInstanceId;
-    }
-
-    public String getOrderId() {
-        return orderId;
-    }
-
-    public String getPaymentStatus() {
-        return paymentStatus;
-    }
-
-    public String getInventoryStatus() {
-        return inventoryStatus;
-    }
-
-    public String getOrderStatus() {
-        return orderStatus;
-    }
-
-    public String getCustomerId() {
-        return customerId;
-    }
-
-    public int getAmount() {
-        return amount;
-    }
+/** The final API DTO assembled by the last BPMN service task. */
+public record OrderResponse(
+        String processInstanceId,
+        CreateOrderTaskResponse createOrder,
+        PaymentTaskResponse payment,
+        InventoryTaskResponse inventory,
+        CompletionTaskResponse completion,
+        RefundPaymentTaskResponse refund,
+        CancelOrderTaskResponse cancellation
+) {
 }

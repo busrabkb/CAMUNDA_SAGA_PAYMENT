@@ -65,7 +65,9 @@ class OrderSagaIntegrationTest {
 
         mockMvc.perform(get("/orders/{orderId}", orderId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("COMPLETED"));
+                .andExpect(jsonPath("$.status").value("COMPLETED"))
+                .andExpect(jsonPath("$.completedBy").value("ahmet"))
+                .andExpect(jsonPath("$.completedAt").isNotEmpty());
     }
 
     @Test
@@ -89,5 +91,11 @@ class OrderSagaIntegrationTest {
 
         assertEquals(OrderStatus.CANCELLED, orderRepository.findById(orderId).orElseThrow().status());
         assertEquals(PaymentStatus.REFUNDED, paymentRepository.findLatestByOrderId(orderId).orElseThrow().status());
+
+        mockMvc.perform(get("/orders/{orderId}", orderId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"))
+                .andExpect(jsonPath("$.completedBy").value((Object) null))
+                .andExpect(jsonPath("$.completedAt").value((Object) null));
     }
 }
